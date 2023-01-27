@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 
 @Component({
   selector: 'app-root',
@@ -17,10 +18,16 @@ export class AppComponent implements OnInit, OnChanges {
   private chartHeight: number | undefined;
 
   private minElementsX: number = 0
-  private maxElementsX: number = 5    //segundos
+  private maxElementsX: number = 8    //segundos
 
-  private minElementsY: number = 4
-  private maxElementsY: number = 0
+  private minElementsY: number = 0
+  private maxElementsY: number = 4
+
+  //grid lines colors
+
+  private gridLineStrong: string = 'rgba(0, 0, 0, 0.8)'
+  private gridLineMedium: string = 'rgba(0, 0, 0, 0.3)'
+  private gridLineLight: string = 'rgba(0, 0, 0, 0.1)'
 
   @HostListener('window:resize', ['$event'])
   onResize(event: any) {
@@ -54,6 +61,7 @@ export class AppComponent implements OnInit, OnChanges {
 
   createChart() {
     Chart.register(...registerables);
+    Chart.register(annotationPlugin);
 
     const data = {
       datasets: [
@@ -75,8 +83,7 @@ export class AppComponent implements OnInit, OnChanges {
       },
       plugins: {
         legend: {
-          display: false,
-          position: 'top',
+          display: false
         },
         title: {
           display: false,
@@ -87,6 +94,10 @@ export class AppComponent implements OnInit, OnChanges {
         },
         hover: {
           mode: null
+        },
+        annotation: {
+          clip: false,
+          annotations: this.generateLines()
         }
       },
       scales: {
@@ -99,7 +110,8 @@ export class AppComponent implements OnInit, OnChanges {
           },
           grid: {
             display: true,
-            drawTicks: false
+            drawTicks: false,
+            color: this.gridLineLight,
           }
         },
         y: {
@@ -107,7 +119,6 @@ export class AppComponent implements OnInit, OnChanges {
           max: this.maxElementsY,
           ticks: {
             display: false,
-            stepSize: 1
           },
           grid: {
             display: true,
@@ -129,5 +140,105 @@ export class AppComponent implements OnInit, OnChanges {
       options: options as any
     });
   }
+
+
+  private generateLines(): any {
+
+    //Lineas fijas predefinidas
+    let lines = {
+      topLine: {
+        display: true,
+        drawTime: 'beforeDraw',
+        type: 'line',
+        borderColor: this.gridLineStrong,
+        borderWidth: 1,
+        value: this.maxElementsY,
+        scaleID: 'y',
+      },
+      bottomLine: {
+        display: true,
+        drawTime: 'beforeDraw',
+        type: 'line',
+        borderColor: this.gridLineStrong,
+        borderWidth: 1,
+        value: this.minElementsY,
+        scaleID: 'y',
+      },
+      startLine: {
+        display: true,
+        drawTime: 'beforeDraw',
+        type: 'line',
+        borderColor: this.gridLineStrong,
+        borderWidth: 1,
+        value: this.minElementsX,
+        scaleID: 'x',
+      },
+      endLine: {
+        display: true,
+        drawTime: 'beforeDraw',
+        type: 'line',
+        borderColor: this.gridLineStrong,
+        borderWidth: 1,
+        value: this.maxElementsX,
+        scaleID: 'x',
+      },
+    };
+
+    // Genera las lineas horizontale y las añade al objeto final que las contiene
+    for (let index = 0; index < this.maxElementsX * 5; index++) {
+      lines = Object.assign(lines, { ['h_' + index]: this.buildHorizontalLine(index) })
+    }
+
+
+    // Genera las lineas verticales y las añade al objeto final que las contiene
+    for (let index = this.minElementsY; index < this.maxElementsY * 10; index++) {
+      lines = Object.assign(lines, { ['v_' + index]: this.buildVerticalLine(index) })
+    }
+
+    return lines
+  }
+
+  /**
+   * Crea las lineas horizontales automaticamente cada 0.2 unidades asignando el color correspondiente
+   * @param index Indice de la linea a crear
+   * @returns Objeto para añadir a annotations
+   */
+  private buildHorizontalLine(index: number): any {
+    let strong: boolean = (index + 1) % 5 === 0;
+    let value = 0.2 + (0.2 * index);
+
+    return {
+      display: true,
+      drawTime: 'beforeDraw',
+      type: 'line',
+      borderColor: strong ? this.gridLineStrong : this.gridLineMedium,
+      borderWidth: 1,
+      value: value.toFixed(1),
+      scaleID: 'x',
+    }
+  }
+
+  /**
+   * Crea las lineas verticales automaticamente cada 0.2 unidades asignando el color correspondiente
+   * @param index Indice de la linea a crear
+   * @returns Objeto para añadir a annotations
+   */
+  private buildVerticalLine(index: number): any {
+    let strong: boolean = (index + 1) % 5 === 0;
+    let value = 0.1 + (0.1 * index);
+
+    return {
+      display: true,
+      drawTime: 'beforeDraw',
+      type: 'line',
+      borderColor: strong ? this.gridLineStrong : this.gridLineMedium,
+      borderWidth: 1,
+      value: value.toFixed(1),
+      scaleID: 'y',
+    }
+  }
+
+
 }
+
 
